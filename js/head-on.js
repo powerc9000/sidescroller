@@ -601,6 +601,19 @@ module.exports = (function(window, undefined){
 			moveTo: function(vec){
 				this.position = vec.sub(this.dimensions.mul(.5).mul(this.zoomAmt));
 				this.center = vec;
+			},
+			visible: function(obj){
+				var dimensions = this.dimensions.mul(this.zoomAmt),
+					camera = {
+					width:dimensions.x,
+					height:dimensions.y
+					position:this.position
+				};
+				if(headOn.collides(obj, camera)){
+					return true;
+				}else{
+					return false;
+				}
 			}
 		}
 		vectorProto = {
