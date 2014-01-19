@@ -5,12 +5,16 @@ module.exports = (function(){
 			canvas.drawImage($h.images("player"), this.position.x, this.position.y);
 		},
 		update: function(delta){
-			var old = this.position;
+			var col = this.position;
 			if($h.keys.Right){
-				this.position = this.position.add(this.vx.mul(delta/1000));
+				this.vx = $h.Vector(400, 0);
+			}else{
+				this.vx = $h.Vector(0,0);
 			}
 			if($h.keys.Left){
-				this.position = this.position.sub(this.vx.mul(delta/1000))
+				this.vx = $h.Vector(-400, 0);
+			}else{
+				this.vx = $h.Vector(0,0);
 			}
 			for(var y=0; y<$h.map.length; y++){
 				for(var x=0; x<$h.map[0].length; x++){
@@ -22,8 +26,10 @@ module.exports = (function(){
 			// if($h.keys.space){
 			// 	this.ay = $h.Vector(0, 400);
 			// }
+
 			this.vy.add(this.ay);
-			this.vx.add(this.ax)
+			this.vx.add(this.ax);
+			this.position = this.position.add(this.vx.mul(delta/1000));
 			$h.currentCamera.moveTo(this.position);
 
 		},
