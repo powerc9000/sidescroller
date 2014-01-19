@@ -606,8 +606,9 @@ module.exports = (function(window, undefined){
 				var dimensions = this.dimensions.mul(this.zoomAmt),
 					camera = {
 					width:dimensions.x,
-					height:dimensions.y
-					position:this.position
+					height:dimensions.y,
+					position:this.position,
+					angle:0
 				};
 				if(headOn.collides(obj, camera)){
 					return true;

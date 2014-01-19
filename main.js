@@ -629,6 +629,20 @@ module.exports = (function(window, undefined){
 			moveTo: function(vec){
 				this.position = vec.sub(this.dimensions.mul(.5).mul(this.zoomAmt));
 				this.center = vec;
+			},
+			visible: function(obj){
+				var dimensions = this.dimensions.mul(this.zoomAmt),
+					camera = {
+					width:dimensions.x,
+					height:dimensions.y,
+					position:this.position,
+					angle:0
+				};
+				if(headOn.collides(obj, camera)){
+					return true;
+				}else{
+					return false;
+				}
 			}
 		}
 		vectorProto = {
@@ -701,6 +715,7 @@ var $h = require("./head-on");
 	})
 }());
 },{"./head-on":2}],4:[function(require,module,exports){
+var $h = require("./head-on");
 exports.map = [
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -719,41 +734,64 @@ exports.dimensions = {
 	width:32*40,
 	height:11*20
 }
-},{}],5:[function(require,module,exports){
+},{"./head-on":2}],5:[function(require,module,exports){
 var $h = require("./head-on");
 module.exports = (function(){
+	var gravity = $h.Vector(0,20);
 	player = $h.entity({
 		render: function(canvas){
 			canvas.drawImage($h.images("player"), this.position.x, this.position.y);
 		},
 		update: function(delta){
-			var old = this.position;
-			if($h.keys.Right){
-				this.position = this.position.add(this.vx.mul(delta/1000));
+			var col;
+			var collided = false;
+			
+			if($h.keys.Right ){
+				this.v = $h.Vector(400, this.v.y);
+			}else if($h.keys.Left ){
+				this.v = $h.Vector(-400, this.v.y);
+			}else{
+				this.v = $h.Vector(0, this.v.y);
 			}
-			if($h.keys.Left){
-				this.position = this.position.sub(this.vx.mul(delta/1000))
+			if($h.keys.space && this.onGround){
+				this.v = $h.Vector(this.v.x, -800);
 			}
+			this.v.add(this.ay);
+			this.v.add(this.ax);
+			this.v = this.v.add(gravity);
+			this.position = this.position.add(this.v.mul(delta/1000));
+			//set on ground to false after movement to let collision detection check if we are on ground
+			//We cant just check the v.y of the player because when he reaches the height of his arc you can jump again
+			this.onGround = false;
 			for(var y=0; y<$h.map.length; y++){
 				for(var x=0; x<$h.map[0].length; x++){
-					if($h.map[y][x] && $h.collides(this, {width:32, height:32, angle:0, position: $h.Vector(x*32, y*32)})){
-						this.position = old;
+					col = $h.collides(this, {width:32, height:32, angle:0, position: $h.Vector(x*32, y*32)});
+					if($h.map[y][x] && col){
+						if(col.normal.y){
+							if(col.normal.y == -1){
+								//normal of -1 means we on on top of a block so we are on the ground
+								this.onGround = true;
+							}
+							this.v = $h.Vector(this.v.x, 0);
+						}
+						if(col.normal.x){
+							this.v = $h.Vector(0, this.v.y);
+						}
+						this.position = this.position.sub($h.Vector(col.normal.x, col.normal.y).mul(col.overlap));
+						//this.position = col;
 					}
 				}
 			}
-			// if($h.keys.space){
-			// 	this.ay = $h.Vector(0, 400);
-			// }
-			this.vy.add(this.ay);
-			this.vx.add(this.ax)
+			
+
+			
 			$h.currentCamera.moveTo(this.position);
 
 		},
 		position: $h.Vector(0,268),
 		ax: $h.Vector(0,0),
 		ay: $h.Vector(0,0),
-		vx: $h.Vector(400,0),
-		vy: $h.Vector(0, 400),
+		v: $h.Vector(400,0),
 		angle: 0,
 		width:32,
 		height:52
@@ -767,20 +805,26 @@ module.exports = function(canvas, map){
 		canvas.clear();
 		for(var y=0; y < map.length; y++){
 			for(var x=0; x<map[0].length; x++){
-				if(map[y][x]=== 0){
-					continue;
-				}
-				if(map[y][x] === 1){
-					canvas.drawImage($h.images("grass"), x*32, y*32);
-				}
-				if(map[y][x] === 2){
-					canvas.drawImage($h.images("brick"), x*32, y*32);
+				if($h.currentCamera.visible({width:32, height:32, position:$h.Vector(x*32, y*32), angle:0})){
+					if(map[y][x]=== 0){
+						continue;
+					}
+					if(map[y][x] === 1){
+						canvas.drawImage($h.images("grass"), x*32, y*32);
+					}
+					if(map[y][x] === 2){
+						canvas.drawImage($h.images("brick"), x*32, y*32);
+					}
 				}
 			}
 		}
 		$h.player.render(canvas);
 	}
 
+}
+function visible(x,y){
+	var cam = $h.currentCamera;
+	
 }
 },{"./head-on":2}],7:[function(require,module,exports){
 var $h = require("./head-on");
