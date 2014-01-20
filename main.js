@@ -14,14 +14,22 @@ var player = require("./player"),
 $h.canvas.create("main", viewport.width, viewport.height, camera);
 canvas = $h.canvas("main");
 canvas.append("body");
-$h.player = player;
+
 $h.currentCamera = camera;
 $h.map = map.map;
 $h.loadImages([
 	{name:"grass", src:"img/grass.png"},
 	{name:"brick", src:"img/brick2.png"},
-	{name:"player", src:"img/player.png"}
-	])
+	{name:"player", src:"img/player.png"},
+	{name:"walk", src:"img/playerwalk.png"},
+	{name:"walk1", src:"img/playerwalk1.png"},
+	{name:"walk2", src:"img/playerwalk2.png"},
+	{name:"walk3", src:"img/playerwalk3.png"},
+	{name:"walk4", src:"img/playerwalk4.png"},
+	{name:"jump", src:"img/player_jump.png"}
+	], function(){}, function(){
+		$h.player = player();
+	})
 $h.update(update);
 $h.render(render(canvas, map.map));
 $h.run();
@@ -81,29 +89,17 @@ module.exports = (function(window, undefined){
 					this.zoomAmt = zoom || 1;
 					return this;
 				},
-				animate: function(object,keyFrames,callback){
-					var that, interval, currentFrame = 0;
-					if(!object.animating){
-						object.animating = true;
-						object.image = keyFrames[0];
-						that = this;
-
-						interval = setInterval(function(){
-							if(keyFrames.length === currentFrame){
-								callback();
-								object.animating = false;
-								object.image = "";
-								clearInterval(interval);
-							}
-							else{
-								currentFrame += 1;
-								object.image = keyFrames[currentFrame];
-							}
-						},1000/this.fps);
+				animate: function(keyFrames, fps){
+					if(this === headOn){
+						throw "Must be called with `new`";
 					}
-					
-					
-					
+					var that, interval, currentFrame = 0;
+					this.frames = keyFrames;
+					this.animating = false;
+					this.frame = 0;
+					this.fps = fps || headOn.fps;
+
+					return this;
 				},
 
 				update: function(cb){this._update = cb},
@@ -584,6 +580,50 @@ module.exports = (function(window, undefined){
 				this.canvas.camera = cam;
 			}
 		}
+		headOn.animate.prototype = {
+			start:function(repeat, start){
+				start = start || 0;
+				this.repeat = repeat;
+				if(!this.animating){
+					this.animating = true;
+					this.image = this.frames[start];
+
+					this.interval = setInterval(function(){
+						if(this.frames.length === this.frame + 1){
+							//callback();
+							if(repeat){
+								this.frame = start;
+								this.image = this.frames[start];
+							}else{
+								this.animating = false;
+								clearInterval(this.interval);
+
+							}
+						}
+						else{
+							this.frame += 1;
+							this.image = this.frames[this.frame];
+						}
+					}.bind(this), 1000/this.fps);
+				}
+				
+			},
+			stop: function(){
+				clearInterval(this.interval);
+				this.animating = false;
+				this.frame = 0;
+			},
+			pause: function(){
+				clearInterval(this.interval);
+				this.paused = true;
+				this.animating = false;
+			},
+			resume: function(){
+				if(this.paused){
+					this.start(this.repeat, this.frame);
+				}
+			}
+		}
 		headOn.Timer.prototype = {
 			job: function(time, start){
 				var jiff = {
@@ -736,30 +776,52 @@ exports.dimensions = {
 }
 },{"./head-on":2}],5:[function(require,module,exports){
 var $h = require("./head-on");
-module.exports = (function(){
+module.exports = function(){
+	var walkAnimation = new $h.animate([
+		$h.images("walk"),
+		$h.images("walk2"),
+		$h.images("walk3"),
+		$h.images("walk4")
+	], 30);
+	var currentAnimation;
 	var gravity = $h.Vector(0,20);
 	player = $h.entity({
 		render: function(canvas){
-			canvas.drawImage($h.images("player"), this.position.x, this.position.y);
+			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y);
 		},
 		update: function(delta){
 			var col;
 			var collided = false;
 			
-			if($h.keys.Right ){
+			if($h.keys.Right){
 				this.v = $h.Vector(400, this.v.y);
-			}else if($h.keys.Left ){
+				currentAnimation = walkAnimation;
+				walkAnimation.start(true);
+				
+			}else if($h.keys.Left){
 				this.v = $h.Vector(-400, this.v.y);
+				
+				currentAnimation = walkAnimation;
+				walkAnimation.start(true);
+				
 			}else{
 				this.v = $h.Vector(0, this.v.y);
+				currentAnimation = {image:$h.images("player")}
+				walkAnimation.stop();
 			}
 			if($h.keys.space && this.onGround){
 				this.v = $h.Vector(this.v.x, -800);
+				
 			}
+
 			this.v.add(this.ay);
 			this.v.add(this.ax);
 			this.v = this.v.add(gravity);
 			this.position = this.position.add(this.v.mul(delta/1000));
+			if(!this.onGround){
+				walkAnimation.stop();
+				currentAnimation = {image:$h.images("jump")}
+			}
 			//set on ground to false after movement to let collision detection check if we are on ground
 			//We cant just check the v.y of the player because when he reaches the height of his arc you can jump again
 			this.onGround = false;
@@ -797,7 +859,7 @@ module.exports = (function(){
 		height:52
 	});
 	return player;
-}());
+};
 },{"./head-on":2}],6:[function(require,module,exports){
 var $h = require("./head-on");
 module.exports = function(canvas, map){

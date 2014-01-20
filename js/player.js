@@ -1,28 +1,50 @@
 var $h = require("./head-on");
-module.exports = (function(){
+module.exports = function(){
+	var walkAnimation = new $h.animate([
+		$h.images("walk"),
+		$h.images("walk2"),
+		$h.images("walk3"),
+		$h.images("walk4")
+	], 30);
+	var currentAnimation;
 	var gravity = $h.Vector(0,20);
 	player = $h.entity({
 		render: function(canvas){
-			canvas.drawImage($h.images("player"), this.position.x, this.position.y);
+			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y);
 		},
 		update: function(delta){
 			var col;
 			var collided = false;
 			
-			if($h.keys.Right ){
+			if($h.keys.Right){
 				this.v = $h.Vector(400, this.v.y);
-			}else if($h.keys.Left ){
+				currentAnimation = walkAnimation;
+				walkAnimation.start(true);
+				
+			}else if($h.keys.Left){
 				this.v = $h.Vector(-400, this.v.y);
+				
+				currentAnimation = walkAnimation;
+				walkAnimation.start(true);
+				
 			}else{
 				this.v = $h.Vector(0, this.v.y);
+				currentAnimation = {image:$h.images("player")}
+				walkAnimation.stop();
 			}
 			if($h.keys.space && this.onGround){
 				this.v = $h.Vector(this.v.x, -800);
+				
 			}
+
 			this.v.add(this.ay);
 			this.v.add(this.ax);
 			this.v = this.v.add(gravity);
 			this.position = this.position.add(this.v.mul(delta/1000));
+			if(!this.onGround){
+				walkAnimation.stop();
+				currentAnimation = {image:$h.images("jump")}
+			}
 			//set on ground to false after movement to let collision detection check if we are on ground
 			//We cant just check the v.y of the player because when he reaches the height of his arc you can jump again
 			this.onGround = false;
@@ -60,4 +82,4 @@ module.exports = (function(){
 		height:52
 	});
 	return player;
-}());
+};

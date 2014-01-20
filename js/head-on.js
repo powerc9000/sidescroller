@@ -53,29 +53,17 @@ module.exports = (function(window, undefined){
 					this.zoomAmt = zoom || 1;
 					return this;
 				},
-				animate: function(object,keyFrames,callback){
-					var that, interval, currentFrame = 0;
-					if(!object.animating){
-						object.animating = true;
-						object.image = keyFrames[0];
-						that = this;
-
-						interval = setInterval(function(){
-							if(keyFrames.length === currentFrame){
-								callback();
-								object.animating = false;
-								object.image = "";
-								clearInterval(interval);
-							}
-							else{
-								currentFrame += 1;
-								object.image = keyFrames[currentFrame];
-							}
-						},1000/this.fps);
+				animate: function(keyFrames, fps){
+					if(this === headOn){
+						throw "Must be called with `new`";
 					}
-					
-					
-					
+					var that, interval, currentFrame = 0;
+					this.frames = keyFrames;
+					this.animating = false;
+					this.frame = 0;
+					this.fps = fps || headOn.fps;
+
+					return this;
 				},
 
 				update: function(cb){this._update = cb},
@@ -554,6 +542,50 @@ module.exports = (function(window, undefined){
 			},
 			setCamera: function(cam){
 				this.canvas.camera = cam;
+			}
+		}
+		headOn.animate.prototype = {
+			start:function(repeat, start){
+				start = start || 0;
+				this.repeat = repeat;
+				if(!this.animating){
+					this.animating = true;
+					this.image = this.frames[start];
+
+					this.interval = setInterval(function(){
+						if(this.frames.length === this.frame + 1){
+							//callback();
+							if(repeat){
+								this.frame = start;
+								this.image = this.frames[start];
+							}else{
+								this.animating = false;
+								clearInterval(this.interval);
+
+							}
+						}
+						else{
+							this.frame += 1;
+							this.image = this.frames[this.frame];
+						}
+					}.bind(this), 1000/this.fps);
+				}
+				
+			},
+			stop: function(){
+				clearInterval(this.interval);
+				this.animating = false;
+				this.frame = 0;
+			},
+			pause: function(){
+				clearInterval(this.interval);
+				this.paused = true;
+				this.animating = false;
+			},
+			resume: function(){
+				if(this.paused){
+					this.start(this.repeat, this.frame);
+				}
 			}
 		}
 		headOn.Timer.prototype = {
