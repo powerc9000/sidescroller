@@ -16,6 +16,7 @@ canvas.append("body");
 
 $h.currentCamera = camera;
 $h.map = map.map;
+//camera.zoomIn(2);
 $h.loadImages([
 	{name:"grass", src:"img/grass.png"},
 	{name:"brick", src:"img/brick2.png"},

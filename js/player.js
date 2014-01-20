@@ -10,7 +10,7 @@ module.exports = function(){
 	var gravity = $h.Vector(0,20);
 	player = $h.entity({
 		render: function(canvas){
-			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y);
+			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y, true);
 		},
 		update: function(delta){
 			var col;

@@ -17,6 +17,7 @@ canvas.append("body");
 
 $h.currentCamera = camera;
 $h.map = map.map;
+//camera.zoomIn(2);
 $h.loadImages([
 	{name:"grass", src:"img/grass.png"},
 	{name:"brick", src:"img/brick2.png"},
@@ -515,8 +516,19 @@ module.exports = (function(window, undefined){
 			},
 			drawImage: function(image,x,y){
 				var ctx = this.canvas.ctx, camera = this.canvas.camera;
+				ctx.save();
+
 				try{
-					ctx.drawImage(image,(x - camera.position.x)/camera.zoomAmt , (y - camera.position.y)/camera.zoomAmt);	
+					ctx.drawImage(
+						image,
+						0,
+						0,
+						image.width,
+						image.height,
+						(x - camera.position.x)/camera.zoomAmt, 
+						(y - camera.position.y)/camera.zoomAmt, 
+						image.width / camera.zoomAmt,
+						image.height / camera.zoomAmt)
 				}
 				catch(e){
 					console.log(e.message);
@@ -525,6 +537,7 @@ module.exports = (function(window, undefined){
 					// }
 					
 				}
+				ctx.restore();
 				return this;
 			},
 
@@ -787,7 +800,7 @@ module.exports = function(){
 	var gravity = $h.Vector(0,20);
 	player = $h.entity({
 		render: function(canvas){
-			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y);
+			canvas.drawImage(currentAnimation.image, this.position.x, this.position.y, true);
 		},
 		update: function(delta){
 			var col;
