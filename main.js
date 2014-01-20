@@ -514,21 +514,19 @@ module.exports = (function(window, undefined){
 				ctx.closePath();
 				return this;
 			},
-			drawImage: function(image,x,y){
+			drawImage: function(image,x,y, flipH, flipV){
 				var ctx = this.canvas.ctx, camera = this.canvas.camera;
+				// scaleH = flipH ? -1 : 1, // Set horizontal scale to -1 if flip horizontal
+				// scaleV = flipV ? -1 : 1;
 				ctx.save();
-
+				//ctx.scale(scaleH,scaleV)
 				try{
 					ctx.drawImage(
 						image,
-						0,
-						0,
-						image.width,
-						image.height,
 						(x - camera.position.x)/camera.zoomAmt, 
-						(y - camera.position.y)/camera.zoomAmt, 
-						image.width / camera.zoomAmt,
-						image.height / camera.zoomAmt)
+						(y - camera.position.y)/camera.zoomAmt,
+						image.width/camera.zoomAmt,
+						image.height/camera.zoomAmt)
 				}
 				catch(e){
 					console.log(e.message);
