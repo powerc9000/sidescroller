@@ -821,7 +821,7 @@ module.exports = function(){
 				walkAnimation.stop();
 			}
 			if($h.keys.space && this.onGround){
-				this.v = $h.Vector(this.v.x, -800);
+				this.v = $h.Vector(this.v.x, -600);
 				
 			}
 
